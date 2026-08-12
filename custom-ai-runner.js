@@ -76,6 +76,14 @@ export function validateCustomCode(code) {
   return true;
 }
 
+export function validateCustomFileMetadata(file) {
+  if (!file?.name) throw new Error("불러올 AI 파일을 선택하세요.");
+  if (!/\.(?:js|txt)$/i.test(file.name)) throw new Error(".js 또는 .txt 파일만 불러올 수 있습니다.");
+  if (!Number.isFinite(file.size) || file.size <= 0) throw new Error("선택한 파일이 비어 있습니다.");
+  if (file.size > CUSTOM_AI_LIMITS.codeBytes) throw new Error("AI 파일은 50KB 이하여야 합니다.");
+  return true;
+}
+
 export function runCustomAI(code, state, options = {}) {
   validateCustomCode(code);
   const timeoutMs = Math.max(20, Math.min(options.timeoutMs ?? CUSTOM_AI_LIMITS.moveTimeMs, 2_000));
@@ -132,4 +140,3 @@ export function terminateCustomAIWorkers() {
   for (const worker of activeWorkers) worker.terminate();
   activeWorkers.clear();
 }
-

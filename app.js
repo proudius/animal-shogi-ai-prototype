@@ -17,6 +17,7 @@ import {
   runCustomAI,
   terminateCustomAIWorkers,
   validateCustomCode,
+  validateCustomFileMetadata,
 } from "./custom-ai-runner.js";
 
 const $ = (id) => document.getElementById(id);
@@ -385,6 +386,30 @@ async function copyCustomSpec() {
   }
 }
 
+async function loadCustomAIFile(file) {
+  try {
+    validateCustomFileMetadata(file);
+    const code = await file.text();
+    const bytes = new TextEncoder().encode(code).length;
+    if (!code.trim()) throw new Error("선택한 파일이 비어 있습니다.");
+    if (bytes > CUSTOM_AI_LIMITS.codeBytes) throw new Error("AI 파일은 50KB 이하여야 합니다.");
+
+    $("customEditor").value = code;
+    $("editorFileName").textContent = file.name;
+    localStorage.setItem("animal-shogi-custom-ai", code);
+    try {
+      validateCustomCode(code);
+      setCodeStatus(`${file.name} 전체 ${bytes.toLocaleString()}바이트를 불러왔습니다.`, "success");
+    } catch (error) {
+      setCodeStatus(`${file.name}은 불러왔지만 확인이 필요합니다: ${error.message}`, "error");
+    }
+  } catch (error) {
+    setCodeStatus(`파일 불러오기 실패 · ${error.message}`, "error");
+  } finally {
+    $("codeFileInput").value = "";
+  }
+}
+
 async function runBenchmarkBattle() {
   if (tournamentRunning) return;
   const code = $("customEditor").value;
@@ -547,9 +572,12 @@ $("customEditor").addEventListener("keydown", (event) => {
 });
 $("resetCode").onclick = () => {
   $("customEditor").value = STARTER_AI_CODE;
+  $("editorFileName").textContent = "my-animal-ai.js";
   localStorage.setItem("animal-shogi-custom-ai", STARTER_AI_CODE);
   setCodeStatus("시작 예제 코드를 복원했습니다.", "success");
 };
+$("uploadCode").onclick = () => $("codeFileInput").click();
+$("codeFileInput").onchange = (event) => loadCustomAIFile(event.target.files?.[0]);
 $("copySpec").onclick = copyCustomSpec;
 $("testCode").onclick = testCustomCode;
 $("runBattle").onclick = runBenchmarkBattle;

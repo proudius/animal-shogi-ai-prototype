@@ -6,6 +6,7 @@ import {
   findLegalCustomMove,
   makePublicState,
   validateCustomCode,
+  validateCustomFileMetadata,
 } from "../custom-ai-runner.js";
 
 test("사용자 AI에 전달하는 초기 공개 상태는 합법 수 4개를 포함한다", () => {
@@ -29,3 +30,10 @@ test("chooseMove가 없는 코드와 50KB 초과 코드를 거부한다", () => 
   assert.throws(() => validateCustomCode(oversized), /50KB/);
 });
 
+test("AI 파일은 js 또는 txt 확장자와 50KB 용량 제한을 검사한다", () => {
+  assert.equal(validateCustomFileMetadata({ name: "my-ai.js", size: 128 }), true);
+  assert.equal(validateCustomFileMetadata({ name: "my-ai.TXT", size: 128 }), true);
+  assert.throws(() => validateCustomFileMetadata({ name: "my-ai.html", size: 128 }), /\.js 또는 \.txt/);
+  assert.throws(() => validateCustomFileMetadata({ name: "my-ai.js", size: 0 }), /비어/);
+  assert.throws(() => validateCustomFileMetadata({ name: "my-ai.js", size: CUSTOM_AI_LIMITS.codeBytes + 1 }), /50KB/);
+});

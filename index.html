@@ -106,11 +106,13 @@
       <div class="code-arena-grid">
         <article class="editor-card">
           <div class="editor-toolbar">
-            <div><span class="editor-dot"></span><b>my-animal-ai.js</b></div>
+            <div><span class="editor-dot"></span><b id="editorFileName">my-animal-ai.js</b></div>
             <span>JavaScript · 50KB · 500ms/수</span>
           </div>
           <textarea id="customEditor" class="code-editor" spellcheck="false" aria-label="내 AI JavaScript 코드"></textarea>
           <div class="editor-actions">
+            <input id="codeFileInput" type="file" accept=".js,.txt,text/javascript,application/javascript,text/plain" hidden aria-label="AI 코드 파일 선택">
+            <button id="uploadCode">AI 파일 불러오기</button>
             <button id="resetCode">예제 복원</button>
             <button id="copySpec">LLM용 규격 복사</button>
             <button id="testCode" class="primary">코드 1수 검증</button>
