@@ -9,7 +9,7 @@ import {
   stateKey,
   withDraw,
 } from "./engine.js";
-import { AI_LEVELS, chooseMove, tablebaseSize } from "./ai.js";
+import { AI_LEVELS, chooseMove } from "./ai.js?v=20260812-web-cleanup";
 import { battleLogFilename, battleResultLabel, fairSideSchedule, formatBattleLog } from "./battle-log.js?v=20260812-fair-sides";
 import {
   CUSTOM_AI_LIMITS,
@@ -64,7 +64,7 @@ function initializeControls() {
   const power = [18, 35, 55, 76, 100];
   $("levelCards").innerHTML = levelOrder.map((level, index) => {
     const info = AI_LEVELS[level];
-    const technique = ["무작위 표본", "정적 평가", "미니맥스", "알파베타 + TT", "정확해 + 반복 심화"][index];
+    const technique = ["무작위 표본", "정적 평가", "미니맥스", "알파베타 + TT", "반복 심화 + TT"][index];
     return `<article class="level-card ${level === "v5" ? "active" : ""}" data-version="${level.toUpperCase()}" style="--power:${power[index]}%">
       <span class="bar"></span><b>${info.name}</b><small>${technique}</small><p>${info.description}</p>
     </article>`;
@@ -102,7 +102,6 @@ function render() {
   updatePlayerLabels();
   const label = state.winner ? "대국 종료" : `${state.turn === "P1" ? "P1" : "P2"} 차례`;
   $("turnPill").textContent = label;
-  $("tablebaseCount").textContent = tablebaseSize().toLocaleString();
   $("undo").disabled = busy || snapshots.length <= 1;
 }
 
@@ -340,7 +339,7 @@ function updateTelemetry(answer, notation) {
   $("elapsed").textContent = `${stats.elapsedMs ?? 0} ms`;
   $("tableHits").textContent = (stats.tableHits ?? 0).toLocaleString();
   $("chosenMove").textContent = notation;
-  $("sourceChip").textContent = stats.exact ? "정확해" : sourceLabel(stats.source);
+  $("sourceChip").textContent = stats.exact ? "심화 결과" : sourceLabel(stats.source);
 }
 
 function resetTelemetry() {
@@ -353,7 +352,7 @@ function resetTelemetry() {
 }
 
 function sourceLabel(source) {
-  return { random: "무작위", heuristic: "정적 평가", search: "고정 탐색", "iterative-search": "반복 심화", tablebase: "정확해", "custom-code": "내 AI 코드" }[source] ?? "탐색";
+  return { random: "무작위", heuristic: "정적 평가", search: "고정 탐색", "iterative-search": "반복 심화", tablebase: "심화 탐색", "custom-code": "내 AI 코드" }[source] ?? "탐색";
 }
 
 function playerDisplayName(type) {

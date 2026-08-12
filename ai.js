@@ -18,7 +18,7 @@ export const AI_LEVELS = Object.freeze({
   v2: { name: "v2 사냥꾼", short: "1수 전술", depth: 1, timeMs: 0, description: "라이온 포획, 트라이, 큰 말 잡기를 우선합니다." },
   v3: { name: "v3 수읽기", short: "3수 미니맥스", depth: 3, timeMs: 0, description: "3수 앞을 미니맥스로 읽고 위험한 교환을 피합니다." },
   v4: { name: "v4 전략가", short: "6수 알파베타", depth: 6, timeMs: 0, description: "알파베타 가지치기와 전치표로 6수를 탐색합니다." },
-  v5: { name: "v5 완전해석형", short: "테이블베이스 + 심화", depth: 16, timeMs: 420, description: "정확 테이블베이스를 먼저 조회하고, 없으면 반복 심화 탐색을 수행합니다." },
+  v5: { name: "v5 심화 탐색", short: "반복 심화 + 전치표", depth: 16, timeMs: 420, description: "제한 시간 동안 반복 심화 탐색을 수행하며 가장 깊게 완료한 결과를 선택합니다." },
 });
 
 export function installTablebase(entries) {
