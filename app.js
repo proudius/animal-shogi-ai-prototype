@@ -10,6 +10,7 @@ import {
   withDraw,
 } from "./engine.js";
 import { AI_LEVELS, chooseMove, tablebaseSize } from "./ai.js";
+import { battleLogFilename, battleResultLabel, formatBattleLog } from "./battle-log.js?v=20260812-match-logs";
 import {
   CUSTOM_AI_LIMITS,
   CUSTOM_AI_SPEC,
@@ -34,6 +35,7 @@ let autoMode = false;
 let session = 0;
 let tournamentRunning = false;
 let tournamentToken = 0;
+let benchmarkLogs = [];
 
 function initializeControls() {
   for (const level of levelOrder) {
@@ -434,6 +436,8 @@ async function runBenchmarkBattle() {
   $("stopBattle").disabled = false;
   $("testCode").disabled = true;
   $("battleTableBody").innerHTML = "";
+  benchmarkLogs = [];
+  renderBattleLogs();
   updateBattleSummary(total, completed, totalGames, results);
   setBattleNote("내 AI는 P1과 P2를 번갈아 맡습니다. 첫 경기를 준비 중입니다.");
 
@@ -448,7 +452,7 @@ async function runBenchmarkBattle() {
           outcome = await playBenchmarkGame(code, opponent, customSide, token);
         } catch (error) {
           if (token !== tournamentToken) return;
-          outcome = { result: "loss", plies: 0, error: error.message };
+          outcome = { result: "loss", plies: 0, error: error.message, reason: "대전 실행 오류", moves: [] };
         }
         results[opponent][outcome.result] += 1;
         total[outcome.result] += 1;
@@ -460,6 +464,22 @@ async function runBenchmarkBattle() {
           setBattleNote(`${AI_LEVELS[opponent].name}전 ${outcome.result === "win" ? "승리" : outcome.result === "draw" ? "무승부" : "패배"} · ${outcome.plies}수`);
         }
         completed += 1;
+        benchmarkLogs.push({
+          id: `match-${completed}`,
+          sequence: completed,
+          opponent,
+          opponentName: AI_LEVELS[opponent].name,
+          gameNumber: game + 1,
+          customSide,
+          codeFileName: $("editorFileName").textContent,
+          result: outcome.result,
+          reason: outcome.reason,
+          plies: outcome.plies,
+          error: outcome.error,
+          moves: outcome.moves ?? [],
+          playedAt: new Date().toLocaleString("ko-KR", { hour12: false }),
+        });
+        renderBattleLogs();
         updateBattleSummary(total, completed, totalGames, results);
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
@@ -479,17 +499,38 @@ async function runBenchmarkBattle() {
 async function playBenchmarkGame(code, opponent, customSide, token) {
   let matchState = initialState();
   const seen = new Map([[stateKey(matchState), 1]]);
+  const moves = [];
 
   for (let ply = 0; ply < CUSTOM_AI_LIMITS.maxPlies && !matchState.winner; ply += 1) {
     if (token !== tournamentToken) throw new Error("대전이 중지되었습니다.");
     const available = legalMoves(matchState);
     if (!available.length) {
-      return { result: matchState.turn === customSide ? "loss" : "win", plies: ply, error: null };
+      return { result: matchState.turn === customSide ? "loss" : "win", plies: ply, error: null, reason: "합법 수가 없습니다.", moves };
     }
-    const answer = matchState.turn === customSide
-      ? await runCustomAI(code, matchState)
-      : chooseMove(matchState, opponent, { timeMs: opponent === "v5" ? 45 : undefined, maxDepth: 10 });
-    if (!answer.move) throw new Error("AI가 수를 반환하지 않았습니다.");
+    let answer;
+    try {
+      answer = matchState.turn === customSide
+        ? await runCustomAI(code, matchState)
+        : chooseMove(matchState, opponent, { timeMs: opponent === "v5" ? 45 : undefined, maxDepth: 10 });
+      if (!answer.move) throw new Error("AI가 수를 반환하지 않았습니다.");
+    } catch (error) {
+      if (token !== tournamentToken) throw error;
+      const failedActor = matchState.turn === customSide ? "내 AI" : AI_LEVELS[opponent].name;
+      return {
+        result: matchState.turn === customSide ? "loss" : "win",
+        plies: moves.length,
+        error: error.message,
+        reason: `${failedActor} 실행 오류`,
+        moves,
+      };
+    }
+    moves.push({
+      ply: moves.length + 1,
+      side: matchState.turn,
+      actor: matchState.turn === customSide ? "내 AI" : AI_LEVELS[opponent].name,
+      notation: moveNotation(matchState, answer.move),
+      elapsedMs: answer.stats?.elapsedMs,
+    });
     matchState = applyMove(matchState, answer.move);
     if (!matchState.winner) {
       const key = stateKey(matchState);
@@ -500,8 +541,15 @@ async function playBenchmarkGame(code, opponent, customSide, token) {
   }
 
   const plies = matchState.ply ?? CUSTOM_AI_LIMITS.maxPlies;
-  if (!matchState.winner || matchState.winner === "DRAW") return { result: "draw", plies, error: null };
-  return { result: matchState.winner === customSide ? "win" : "loss", plies, error: null };
+  if (!matchState.winner) return { result: "draw", plies, error: null, reason: `${CUSTOM_AI_LIMITS.maxPlies}수 제한에 도달했습니다.`, moves };
+  if (matchState.winner === "DRAW") return { result: "draw", plies, error: null, reason: matchState.reason, moves };
+  return {
+    result: matchState.winner === customSide ? "win" : "loss",
+    plies,
+    error: null,
+    reason: matchState.reason || `${matchState.winner}이 승리했습니다.`,
+    moves,
+  };
 }
 
 function stopBenchmarkBattle() {
@@ -528,6 +576,36 @@ function updateBattleSummary(total, completed, totalGames, results) {
     const rate = Math.round(score.win / Math.max(1, games) * 100);
     return `<tr><td>${escapeHtml(AI_LEVELS[level].name)}</td><td>${score.win}</td><td>${score.draw}</td><td>${score.loss}</td><td>${rate}%</td><td>${score.errors}</td></tr>`;
   }).join("");
+}
+
+function renderBattleLogs() {
+  if (!benchmarkLogs.length) {
+    $("battleLogList").innerHTML = '<p class="match-log-empty">대전을 완료하면 경기별 로그가 표시됩니다.</p>';
+    return;
+  }
+  $("battleLogList").innerHTML = benchmarkLogs.map((battleLog) => {
+    const downloadUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(`\uFEFF${formatBattleLog(battleLog)}`)}`;
+    return `
+    <article class="match-log-item">
+      <div class="match-log-head">
+        <div><b>#${battleLog.sequence} · ${escapeHtml(battleLog.opponentName)}</b><span>내 AI ${battleLog.customSide} · ${battleResultLabel(battleLog.result)} · ${battleLog.plies}수</span></div>
+        <div class="match-log-actions">
+          <button data-log-action="copy" data-log-id="${battleLog.id}" aria-label="${battleLog.sequence}번 경기 로그 복사">복사</button>
+          <a href="${downloadUrl}" download="${battleLogFilename(battleLog)}" data-log-action="download" data-log-id="${battleLog.id}" aria-label="${battleLog.sequence}번 경기 로그 다운로드">다운로드</a>
+        </div>
+      </div>
+      <details><summary>수순 ${battleLog.moves.length}개 보기</summary><pre>${escapeHtml(formatBattleLog(battleLog))}</pre></details>
+    </article>`;
+  }).join("");
+}
+
+async function copyBattleLog(battleLog) {
+  try {
+    await navigator.clipboard.writeText(formatBattleLog(battleLog));
+    setBattleNote(`#${battleLog.sequence} 경기 로그를 클립보드에 복사했습니다.`, "success");
+  } catch {
+    setBattleNote("클립보드 접근이 차단되어 로그를 복사하지 못했습니다.", "error");
+  }
 }
 
 function setCodeStatus(message, type = "") {
@@ -582,6 +660,14 @@ $("copySpec").onclick = copyCustomSpec;
 $("testCode").onclick = testCustomCode;
 $("runBattle").onclick = runBenchmarkBattle;
 $("stopBattle").onclick = stopBenchmarkBattle;
+$("battleLogList").onclick = (event) => {
+  const control = event.target.closest("[data-log-action]");
+  if (!control) return;
+  const battleLog = benchmarkLogs.find((item) => item.id === control.dataset.logId);
+  if (!battleLog) return;
+  if (control.dataset.logAction === "copy") copyBattleLog(battleLog);
+  if (control.dataset.logAction === "download") setBattleNote(`#${battleLog.sequence} 경기 로그 파일을 다운로드했습니다.`, "success");
+};
 
 initializeControls();
 newGame();
