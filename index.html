@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="동물장기 규칙 엔진과 v1~v5 AI를 직접 대국하고 비교하는 AI 코드 연구실">
   <title>동물장기 AI 연구실 — v1~v5</title>
-  <link rel="stylesheet" href="styles.css?v=20260812-web-cleanup">
+  <link rel="stylesheet" href="styles.css?v=20260812-board-code-flow">
 </head>
 <body>
   <main class="app-shell">
@@ -54,47 +54,11 @@
         <p class="status" id="status" aria-live="polite">말을 선택한 뒤 표시된 칸으로 이동하세요.</p>
       </article>
 
-      <aside class="control-column">
-        <section class="panel settings-panel">
-          <div class="panel-head compact">
-            <div><span class="step">02 · MATCH SETUP</span><h2>선수 설정</h2></div>
-          </div>
-          <div class="select-grid">
-            <label>P1 · 아래쪽<select id="p1Select"><option value="human">사람</option></select></label>
-            <label>P2 · 위쪽<select id="p2Select"></select></label>
-          </div>
-          <div class="level-detail" id="levelDetail"></div>
-        </section>
-
-        <section class="panel telemetry-panel">
-          <div class="panel-head compact">
-            <div><span class="step">03 · TELEMETRY</span><h2>마지막 탐색</h2></div>
-            <span class="exact-chip" id="sourceChip">대기</span>
-          </div>
-          <div class="metrics">
-            <div><span>탐색 노드</span><b id="nodes">0</b></div>
-            <div><span>완료 깊이</span><b id="depth">0</b></div>
-            <div><span>생각 시간</span><b id="elapsed">0 ms</b></div>
-            <div><span>전치표 적중</span><b id="tableHits">0</b></div>
-          </div>
-          <div class="analysis-line">
-            <span>선택한 수</span><strong id="chosenMove">—</strong>
-          </div>
-        </section>
-
-        <section class="panel record-panel">
-          <div class="panel-head compact">
-            <div><span class="step">04 · GAME LOG</span><h2>기보</h2></div>
-            <button id="clearLog" class="text-button">지우기</button>
-          </div>
-          <ol id="moveLog" class="move-log"><li class="empty">아직 둔 수가 없습니다.</li></ol>
-        </section>
-      </aside>
     </section>
 
     <section class="code-arena panel">
       <div class="section-title code-arena-title">
-        <div><span class="step">AI CODE ARENA</span><h2>내 AI 코드로 예제 AI와 대전</h2></div>
+        <div><span class="step">02 · AI CODE ARENA</span><h2>내 AI 코드로 예제 AI와 대전</h2></div>
         <p><code>chooseMove(state, me)</code>를 작성하고 v1~v5를 상대로 선공·후공을 같은 횟수로 번갈아 실력을 측정합니다.</p>
       </div>
 
@@ -166,6 +130,51 @@ me                // "P1" | "P2"</pre></div>
       </details>
     </section>
 
+    <section class="post-arena-layout">
+      <details class="advanced-tools panel">
+        <summary>
+          <span><b>03–04 · MATCH SETUP / TELEMETRY</b><strong>대국 설정·탐색 정보 보기</strong></span>
+          <small>버튼을 눌러 펼치기</small>
+        </summary>
+        <div class="advanced-tools-grid">
+          <section class="settings-panel">
+            <div class="panel-head compact">
+              <div><span class="step">03 · MATCH SETUP</span><h2>선수 설정</h2></div>
+            </div>
+            <div class="select-grid">
+              <label>P1 · 아래쪽<select id="p1Select"><option value="human">사람</option></select></label>
+              <label>P2 · 위쪽<select id="p2Select"></select></label>
+            </div>
+            <div class="level-detail" id="levelDetail"></div>
+          </section>
+
+          <section class="telemetry-panel">
+            <div class="panel-head compact">
+              <div><span class="step">04 · TELEMETRY</span><h2>마지막 탐색</h2></div>
+              <span class="exact-chip" id="sourceChip">대기</span>
+            </div>
+            <div class="metrics">
+              <div><span>탐색 노드</span><b id="nodes">0</b></div>
+              <div><span>완료 깊이</span><b id="depth">0</b></div>
+              <div><span>생각 시간</span><b id="elapsed">0 ms</b></div>
+              <div><span>전치표 적중</span><b id="tableHits">0</b></div>
+            </div>
+            <div class="analysis-line">
+              <span>선택한 수</span><strong id="chosenMove">—</strong>
+            </div>
+          </section>
+        </div>
+      </details>
+
+      <section class="panel record-panel">
+        <div class="panel-head compact">
+          <div><span class="step">05 · GAME LOG</span><h2>기보</h2></div>
+          <button id="clearLog" class="text-button">지우기</button>
+        </div>
+        <ol id="moveLog" class="move-log"><li class="empty">아직 둔 수가 없습니다.</li></ol>
+      </section>
+    </section>
+
     <section class="levels-section">
       <div class="section-title">
         <div><span class="step">AI EVOLUTION</span><h2>성능별 예제 AI v1 → v5</h2></div>
@@ -194,6 +203,6 @@ me                // "P1" | "P2"</pre></div>
       <button id="closeModal">기보 계속 보기</button>
     </div>
   </div>
-  <script type="module" src="app.js?v=20260812-web-cleanup"></script>
+  <script type="module" src="app.js?v=20260812-board-code-flow"></script>
 </body>
 </html>
