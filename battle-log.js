@@ -4,8 +4,15 @@ export function battleResultLabel(result) {
   return RESULT_LABELS[result] ?? result;
 }
 
+export function fairSideSchedule(gameCount) {
+  if (!Number.isInteger(gameCount) || gameCount < 2 || gameCount % 2 !== 0) {
+    throw new Error("공정한 대전을 위해 경기 수는 2 이상의 짝수여야 합니다.");
+  }
+  return Array.from({ length: gameCount }, (_, index) => index % 2 === 0 ? "P1" : "P2");
+}
+
 export function formatBattleLog(log) {
-  const sideLabel = log.customSide === "P1" ? "P1 · 선수(아래쪽)" : "P2 · 후수(위쪽)";
+  const sideLabel = log.customSide === "P1" ? "P1 · 선공(아래쪽)" : "P2 · 후공(위쪽)";
   const lines = [
     "동물장기 AI 대전 로그",
     "=====================",

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="동물장기 규칙 엔진과 v1~v5 AI를 직접 대국하고 비교하는 완전해석형 AI 연구실">
   <title>동물장기 AI 연구실 — v1~v5</title>
-  <link rel="stylesheet" href="styles.css?v=20260812-action-layout">
+  <link rel="stylesheet" href="styles.css?v=20260812-fair-sides">
 </head>
 <body>
   <main class="app-shell">
@@ -14,11 +14,6 @@
         <p class="eyebrow">ANIMAL SHOGI · SEARCH LAB</p>
         <h1>작은 보드, <span>끝까지 읽는 AI.</span></h1>
         <p class="hero-copy">정확한 동물장기 엔진 위에서 무작위 v1부터 테이블베이스 연동 v5까지 직접 대국하고 탐색량을 비교하세요.</p>
-      </div>
-      <div class="solved-badge">
-        <span>완전해석 결과</span>
-        <strong>후수 필승</strong>
-        <small>최선 대국 78수 · 2009 연구 기준</small>
       </div>
     </header>
 
@@ -100,7 +95,7 @@
     <section class="code-arena panel">
       <div class="section-title code-arena-title">
         <div><span class="step">AI CODE ARENA</span><h2>내 AI 코드로 예제 AI와 대전</h2></div>
-        <p><code>chooseMove(state, me)</code>를 작성하고 v1~v5를 상대로 선·후수를 바꿔 실력을 측정합니다.</p>
+        <p><code>chooseMove(state, me)</code>를 작성하고 v1~v5를 상대로 선공·후공을 같은 횟수로 번갈아 실력을 측정합니다.</p>
       </div>
 
       <div class="code-arena-grid">
@@ -133,7 +128,7 @@
           </div>
           <div class="battle-options">
             <label>상대 AI<select id="battleOpponent"><option value="all">v1~v5 전체 비교</option></select></label>
-            <label>AI별 경기 수<select id="battleCount"><option>2</option><option selected>4</option><option>10</option><option>20</option></select></label>
+            <label>AI별 경기 수 · 짝수<select id="battleCount"><option>2</option><option selected>4</option><option>10</option><option>20</option></select></label>
           </div>
           <div class="battle-score">
             <div><span>승</span><b id="battleWins">0</b></div>
@@ -148,7 +143,7 @@
               <tbody id="battleTableBody"><tr><td colspan="6">대전을 시작하면 결과가 표시됩니다.</td></tr></tbody>
             </table>
           </div>
-          <p class="battle-note" id="battleNote">내 AI는 경기마다 P1과 P2를 번갈아 맡습니다.</p>
+          <p class="battle-note" id="battleNote">상대마다 내 AI의 선공 P1과 후공 P2 경기 수를 동일하게 배정합니다.</p>
           <section class="match-logs" aria-labelledby="matchLogsTitle">
             <div class="match-logs-title"><b id="matchLogsTitle">경기별 로그</b><span>TXT · UTF-8</span></div>
             <div class="match-log-list" id="battleLogList"><p class="match-log-empty">대전을 완료하면 경기별 로그가 표시됩니다.</p></div>
@@ -217,6 +212,6 @@ me                // "P1" | "P2"</pre></div>
       <button id="closeModal">기보 계속 보기</button>
     </div>
   </div>
-  <script type="module" src="app.js?v=20260812-match-logs-v3"></script>
+  <script type="module" src="app.js?v=20260812-fair-sides"></script>
 </body>
 </html>

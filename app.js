@@ -10,7 +10,7 @@ import {
   withDraw,
 } from "./engine.js";
 import { AI_LEVELS, chooseMove, tablebaseSize } from "./ai.js";
-import { battleLogFilename, battleResultLabel, formatBattleLog } from "./battle-log.js?v=20260812-match-logs";
+import { battleLogFilename, battleResultLabel, fairSideSchedule, formatBattleLog } from "./battle-log.js?v=20260812-fair-sides";
 import {
   CUSTOM_AI_LIMITS,
   CUSTOM_AI_SPEC,
@@ -425,6 +425,13 @@ async function runBenchmarkBattle() {
   const selectedOpponent = $("battleOpponent").value;
   const opponents = selectedOpponent === "all" ? [...levelOrder] : [selectedOpponent];
   const gamesPerOpponent = Number($("battleCount").value);
+  let sideSchedule;
+  try {
+    sideSchedule = fairSideSchedule(gamesPerOpponent);
+  } catch (error) {
+    setBattleNote(error.message, "error");
+    return;
+  }
   const totalGames = opponents.length * gamesPerOpponent;
   const results = Object.fromEntries(opponents.map((level) => [level, { win: 0, draw: 0, loss: 0, errors: 0 }]));
   const total = { win: 0, draw: 0, loss: 0, errors: 0 };
@@ -439,14 +446,15 @@ async function runBenchmarkBattle() {
   benchmarkLogs = [];
   renderBattleLogs();
   updateBattleSummary(total, completed, totalGames, results);
-  setBattleNote("내 AI는 P1과 P2를 번갈아 맡습니다. 첫 경기를 준비 중입니다.");
+  setBattleNote(`상대마다 내 AI가 선공 P1 ${gamesPerOpponent / 2}경기, 후공 P2 ${gamesPerOpponent / 2}경기를 번갈아 맡습니다.`);
 
   try {
     for (const opponent of opponents) {
       for (let game = 0; game < gamesPerOpponent; game += 1) {
         if (token !== tournamentToken) return;
-        const customSide = game % 2 === 0 ? "P1" : "P2";
-        $("battleStatus").textContent = `${AI_LEVELS[opponent].name} · ${game + 1}/${gamesPerOpponent} · 내 AI ${customSide}`;
+        const customSide = sideSchedule[game];
+        const sideName = customSide === "P1" ? "선공" : "후공";
+        $("battleStatus").textContent = `${AI_LEVELS[opponent].name} · ${game + 1}/${gamesPerOpponent} · 내 AI ${sideName} ${customSide}`;
         let outcome;
         try {
           outcome = await playBenchmarkGame(code, opponent, customSide, token);
@@ -485,7 +493,7 @@ async function runBenchmarkBattle() {
       }
     }
     $("battleStatus").textContent = "대전 완료";
-    setBattleNote(`${completed}경기 완료 · 내 AI 승률 ${Math.round(total.win / Math.max(1, completed) * 100)}%`, total.errors ? "error" : "");
+    setBattleNote(`${completed}경기 완료 · 선공 ${completed / 2}경기 / 후공 ${completed / 2}경기 · 내 AI 승률 ${Math.round(total.win / Math.max(1, completed) * 100)}%`, total.errors ? "error" : "");
   } finally {
     if (token === tournamentToken) {
       tournamentRunning = false;
@@ -588,7 +596,7 @@ function renderBattleLogs() {
     return `
     <article class="match-log-item">
       <div class="match-log-head">
-        <div><b>#${battleLog.sequence} · ${escapeHtml(battleLog.opponentName)}</b><span>내 AI ${battleLog.customSide} · ${battleResultLabel(battleLog.result)} · ${battleLog.plies}수</span></div>
+        <div><b>#${battleLog.sequence} · ${escapeHtml(battleLog.opponentName)}</b><span>내 AI ${battleLog.customSide === "P1" ? "선공 P1" : "후공 P2"} · ${battleResultLabel(battleLog.result)} · ${battleLog.plies}수</span></div>
         <div class="match-log-actions">
           <button data-log-action="copy" data-log-id="${battleLog.id}" aria-label="${battleLog.sequence}번 경기 로그 복사">복사</button>
           <a href="${downloadUrl}" download="${battleLogFilename(battleLog)}" data-log-action="download" data-log-id="${battleLog.id}" aria-label="${battleLog.sequence}번 경기 로그 다운로드">다운로드</a>
