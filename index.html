@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="동물장기 규칙 엔진과 v1~v5 AI를 직접 대국하고 비교하는 완전해석형 AI 연구실">
   <title>동물장기 AI 연구실 — v1~v5</title>
-  <link rel="stylesheet" href="styles.css?v=20260812-match-logs-v3">
+  <link rel="stylesheet" href="styles.css?v=20260812-action-layout">
 </head>
 <body>
   <main class="app-shell">
@@ -112,10 +112,16 @@
           <textarea id="customEditor" class="code-editor" spellcheck="false" aria-label="내 AI JavaScript 코드"></textarea>
           <div class="editor-actions">
             <input id="codeFileInput" type="file" accept=".js,.txt,text/javascript,application/javascript,text/plain" hidden aria-label="AI 코드 파일 선택">
-            <button id="uploadCode">AI 파일 불러오기</button>
-            <button id="resetCode">예제 복원</button>
-            <button id="copySpec">LLM용 규격 복사</button>
-            <button id="testCode" class="primary">코드 1수 검증</button>
+            <div class="editor-file-actions">
+              <button id="uploadCode">AI 파일 불러오기</button>
+              <button id="resetCode">예제 복원</button>
+              <button id="copySpec">LLM용 규격 복사</button>
+            </div>
+            <div class="editor-run-actions">
+              <button id="testCode">코드 1수 검증</button>
+              <button id="runBattle" class="primary">대전 시작</button>
+              <button id="stopBattle" disabled>중지</button>
+            </div>
           </div>
           <p class="code-status" id="codeStatus">코드를 수정하면 브라우저에 자동 저장됩니다.</p>
         </article>
@@ -128,10 +134,6 @@
           <div class="battle-options">
             <label>상대 AI<select id="battleOpponent"><option value="all">v1~v5 전체 비교</option></select></label>
             <label>AI별 경기 수<select id="battleCount"><option>2</option><option selected>4</option><option>10</option><option>20</option></select></label>
-          </div>
-          <div class="battle-actions">
-            <button id="runBattle" class="primary">대전 시작</button>
-            <button id="stopBattle" disabled>중지</button>
           </div>
           <div class="battle-score">
             <div><span>승</span><b id="battleWins">0</b></div>
