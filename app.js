@@ -18,7 +18,7 @@ import {
   terminateCustomAIWorkers,
   validateCustomCode,
   validateCustomFileMetadata,
-} from "./custom-ai-runner.js";
+} from "./custom-ai-runner.js?v=20260812-file-import";
 
 const $ = (id) => document.getElementById(id);
 const levelOrder = ["v1", "v2", "v3", "v4", "v5"];
