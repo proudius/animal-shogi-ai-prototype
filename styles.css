@@ -97,6 +97,33 @@ select { display: block; width: 100%; margin-top: 6px; border: 1px solid var(--l
 .move-log li { padding-bottom: 4px; border-bottom: 1px dotted var(--line); }.move-log .empty { grid-column: 1/-1; color: var(--muted); font-family: "Noto Sans KR", sans-serif; }
 
 .levels-section { margin-top: 48px; }
+.code-arena { margin-top: 30px; padding: 25px; }
+.code-arena-title { align-items: flex-end; margin-bottom: 18px; }
+.code-arena-title code { color: var(--green); font: 600 11px "DM Mono", monospace; }
+.code-arena-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: 14px; }
+.editor-card, .battle-card { min-width: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #faf9f4; }
+.editor-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 13px; color: #8aa097; background: #15271f; font: 9px "DM Mono", monospace; }
+.editor-toolbar>div { display: flex; align-items: center; gap: 7px; color: #d8e8e0; }
+.editor-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); box-shadow: 12px 0 #e4bc58, 24px 0 #68ae8f; margin-right: 24px; }
+.code-editor { display: block; width: 100%; height: 365px; resize: vertical; border: 0; border-bottom: 1px solid var(--line); outline: 0; padding: 16px; color: #d7e9e1; background: #0d1914; font: 12px/1.65 "DM Mono", Consolas, monospace; tab-size: 2; }
+.editor-actions, .battle-actions { display: flex; gap: 7px; padding: 11px; }
+.editor-actions .primary { margin-left: auto; }
+.code-status, .battle-note { min-height: 18px; margin: 0; padding: 0 13px 12px; color: var(--muted); font-size: 9px; line-height: 1.55; }
+.code-status.error, .battle-note.error { color: var(--red); }.code-status.success { color: var(--green); }
+.battle-card { padding-bottom: 5px; }
+.battle-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 15px 15px 8px; }
+.battle-heading h3 { margin: 0; font-size: 18px; letter-spacing: -.04em; }
+.sandbox-chip { padding: 6px 8px; border: 1px solid #b8d2c4; border-radius: 999px; color: var(--green); background: var(--green-soft); font: 700 8px "DM Mono", monospace; }
+.battle-options { display: grid; grid-template-columns: 1.4fr .8fr; gap: 8px; padding: 7px 15px; }
+.battle-actions { padding: 6px 15px 11px; }.battle-actions button { flex: 1; }
+.battle-score { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 15px; }
+.battle-score>div { padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: white; }
+.battle-score span, .battle-score b { display: block; }.battle-score span { color: var(--muted); font-size: 8px; }.battle-score b { margin-top: 2px; font: 600 17px "DM Mono", monospace; }
+.battle-score>div:first-child b { color: var(--green); }.battle-score>div:nth-child(3) b { color: var(--red); }
+.battle-progress { padding: 12px 15px 9px; }.battle-progress>div { display: flex; justify-content: space-between; color: var(--muted); font-size: 9px; }.battle-progress i { display: block; height: 6px; margin-top: 6px; overflow: hidden; border-radius: 5px; background: #e2e5df; }.battle-progress i b { display: block; width: 0; height: 100%; background: linear-gradient(90deg, var(--orange), var(--green)); transition: width .2s; }
+.battle-table-wrap { margin: 0 15px 10px; overflow: auto; border: 1px solid var(--line); border-radius: 9px; background: white; }
+.battle-table { width: 100%; border-collapse: collapse; font: 9px "DM Mono", monospace; text-align: center; }.battle-table th { color: var(--muted); background: #f0f2ed; }.battle-table th, .battle-table td { padding: 8px 5px; border-bottom: 1px solid #e7e9e4; }.battle-table tbody tr:last-child td { border-bottom: 0; }.battle-table td:first-child { color: var(--ink); font-family: "Noto Sans KR", sans-serif; font-weight: 700; text-align: left; }
+.api-contract { margin-top: 13px; border: 1px solid var(--line); border-radius: 11px; background: #faf9f4; }.api-contract summary { padding: 11px 13px; cursor: pointer; color: var(--green); font-size: 10px; font-weight: 800; }.contract-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 12px 12px; }.contract-grid>div { min-width: 0; padding: 12px; border-radius: 9px; background: white; }.contract-grid b { font-size: 11px; }.contract-grid pre { overflow: auto; margin: 7px 0 0; padding: 10px; border-radius: 7px; color: #bce5d1; background: #15271f; font: 9px/1.65 "DM Mono", monospace; }.contract-grid p { margin: 7px 0 0; color: var(--muted); font-size: 9px; }.contract-grid code { color: var(--green); }
 .section-title { align-items: flex-end; margin-bottom: 16px; }.section-title>p { max-width: 480px; margin: 0; color: var(--muted); font-size: 12px; }
 .level-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .level-card { position: relative; min-height: 185px; padding: 18px; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
@@ -118,12 +145,14 @@ select { display: block; width: 100%; margin-top: 6px; border: 1px solid var(--l
 
 @media (max-width: 980px) {
   .workspace { grid-template-columns: 1fr; }.control-column { grid-template-columns: 1fr 1fr; }.record-panel { grid-column: 1/-1; }
+  .code-arena-grid { grid-template-columns: 1fr; }
   .level-cards { grid-template-columns: repeat(3, 1fr); }.rule-list { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 680px) {
   .app-shell { width: min(100% - 20px, 1240px); padding-top: 28px; }.hero { display: block; }.solved-badge { margin-top: 20px; }
   .workspace { display: block; }.control-column { display: grid; grid-template-columns: 1fr; margin-top: 10px; }.record-panel { grid-column: auto; }
-  .board-panel, .settings-panel, .telemetry-panel, .record-panel { padding: 16px; }.metrics { grid-template-columns: 1fr 1fr; }
+  .board-panel, .settings-panel, .telemetry-panel, .record-panel, .code-arena { padding: 16px; }.metrics { grid-template-columns: 1fr 1fr; }
+  .code-arena-title { display: block; }.code-arena-title>p { margin-top: 9px; }.contract-grid { grid-template-columns: 1fr; }.code-editor { height: 320px; }
   .level-cards { grid-template-columns: 1fr 1fr; }.facts-grid { grid-template-columns: 1fr; }.method-card { display: block; }.method-card>* { display: block; margin-bottom: 10px; }
   .rule-list { grid-template-columns: 1fr; }.section-title { display: block; }.section-title>p { margin-top: 10px; }
 }

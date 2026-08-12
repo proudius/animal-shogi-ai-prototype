@@ -97,6 +97,72 @@
       </aside>
     </section>
 
+    <section class="code-arena panel">
+      <div class="section-title code-arena-title">
+        <div><span class="step">AI CODE ARENA</span><h2>내 AI 코드로 예제 AI와 대전</h2></div>
+        <p><code>chooseMove(state, me)</code>를 작성하고 v1~v5를 상대로 선·후수를 바꿔 실력을 측정합니다.</p>
+      </div>
+
+      <div class="code-arena-grid">
+        <article class="editor-card">
+          <div class="editor-toolbar">
+            <div><span class="editor-dot"></span><b>my-animal-ai.js</b></div>
+            <span>JavaScript · 50KB · 500ms/수</span>
+          </div>
+          <textarea id="customEditor" class="code-editor" spellcheck="false" aria-label="내 AI JavaScript 코드"></textarea>
+          <div class="editor-actions">
+            <button id="resetCode">예제 복원</button>
+            <button id="copySpec">LLM용 규격 복사</button>
+            <button id="testCode" class="primary">코드 1수 검증</button>
+          </div>
+          <p class="code-status" id="codeStatus">코드를 수정하면 브라우저에 자동 저장됩니다.</p>
+        </article>
+
+        <article class="battle-card">
+          <div class="battle-heading">
+            <div><span class="step">BENCHMARK MATCH</span><h3>성능별 대전</h3></div>
+            <span class="sandbox-chip">WORKER SANDBOX</span>
+          </div>
+          <div class="battle-options">
+            <label>상대 AI<select id="battleOpponent"><option value="all">v1~v5 전체 비교</option></select></label>
+            <label>AI별 경기 수<select id="battleCount"><option>2</option><option selected>4</option><option>10</option><option>20</option></select></label>
+          </div>
+          <div class="battle-actions">
+            <button id="runBattle" class="primary">대전 시작</button>
+            <button id="stopBattle" disabled>중지</button>
+          </div>
+          <div class="battle-score">
+            <div><span>승</span><b id="battleWins">0</b></div>
+            <div><span>무</span><b id="battleDraws">0</b></div>
+            <div><span>패</span><b id="battleLosses">0</b></div>
+            <div><span>승률</span><b id="battleRate">0%</b></div>
+          </div>
+          <div class="battle-progress"><div><span id="battleStatus">대기 중</span><span id="battleProgressText">0 / 0</span></div><i><b id="battleBar"></b></i></div>
+          <div class="battle-table-wrap">
+            <table class="battle-table">
+              <thead><tr><th>상대</th><th>승</th><th>무</th><th>패</th><th>승률</th><th>오류</th></tr></thead>
+              <tbody id="battleTableBody"><tr><td colspan="6">대전을 시작하면 결과가 표시됩니다.</td></tr></tbody>
+            </table>
+          </div>
+          <p class="battle-note" id="battleNote">내 AI는 경기마다 P1과 P2를 번갈아 맡습니다.</p>
+        </article>
+      </div>
+
+      <details class="api-contract">
+        <summary>AI 함수 입력·출력 규격 보기</summary>
+        <div class="contract-grid">
+          <div><b>입력</b><pre>function chooseMove(state, me)
+
+state.board       // 12칸
+state.hands       // 잡은 말
+state.legalMoves  // 반환 가능한 수
+me                // "P1" | "P2"</pre></div>
+          <div><b>반환</b><pre>{ type: "move", from: 10, to: 7 }
+{ type: "drop", piece: "chick", to: 4 }</pre><p>반드시 <code>state.legalMoves</code>에 들어 있는 수 하나를 반환하세요.</p></div>
+        </div>
+      </details>
+    </section>
+
     <section class="levels-section">
       <div class="section-title">
         <div><span class="step">AI EVOLUTION</span><h2>성능별 예제 AI v1 → v5</h2></div>

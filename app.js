@@ -10,6 +10,14 @@ import {
   withDraw,
 } from "./engine.js";
 import { AI_LEVELS, chooseMove, tablebaseSize } from "./ai.js";
+import {
+  CUSTOM_AI_LIMITS,
+  CUSTOM_AI_SPEC,
+  STARTER_AI_CODE,
+  runCustomAI,
+  terminateCustomAIWorkers,
+  validateCustomCode,
+} from "./custom-ai-runner.js";
 
 const $ = (id) => document.getElementById(id);
 const levelOrder = ["v1", "v2", "v3", "v4", "v5"];
@@ -23,6 +31,8 @@ let lastMove = null;
 let busy = false;
 let autoMode = false;
 let session = 0;
+let tournamentRunning = false;
+let tournamentToken = 0;
 
 function initializeControls() {
   for (const level of levelOrder) {
@@ -33,9 +43,20 @@ function initializeControls() {
       option.textContent = info.name;
       select.appendChild(option);
     }
+    const battleOption = document.createElement("option");
+    battleOption.value = level;
+    battleOption.textContent = AI_LEVELS[level].name;
+    $("battleOpponent").appendChild(battleOption);
+  }
+  for (const select of [$("p1Select"), $("p2Select")]) {
+    const option = document.createElement("option");
+    option.value = "custom";
+    option.textContent = "내 AI 코드";
+    select.appendChild(option);
   }
   $("p1Select").value = "human";
   $("p2Select").value = "v5";
+  $("customEditor").value = localStorage.getItem("animal-shogi-custom-ai") || STARTER_AI_CODE;
 
   const power = [18, 35, 55, 76, 100];
   $("levelCards").innerHTML = levelOrder.map((level, index) => {
@@ -50,6 +71,7 @@ function initializeControls() {
 
 function newGame({ auto = false } = {}) {
   session += 1;
+  terminateCustomAIWorkers();
   state = initialState();
   repetition = new Map([[stateKey(state), 1]]);
   snapshots = [];
@@ -202,16 +224,21 @@ function scheduleAI() {
   busy = true;
   selected = null;
   render();
-  setStatus(`${AI_LEVELS[playerType(state.turn)].name}이 수를 읽고 있습니다…`);
-  window.setTimeout(() => {
+  const scheduledLevel = playerType(state.turn);
+  setStatus(`${playerDisplayName(scheduledLevel)}이 수를 읽고 있습니다…`);
+  window.setTimeout(async () => {
     if (activeSession !== session || state.winner) return;
     try {
       const level = playerType(state.turn);
-      const answer = chooseMove(state, level, { timeMs: autoMode ? 90 : undefined });
+      const answer = level === "custom"
+        ? await runCustomAI($("customEditor").value, state)
+        : chooseMove(state, level, { timeMs: autoMode ? 90 : undefined });
+      if (activeSession !== session) return;
       busy = false;
       if (!answer.move) throw new Error("둘 수 있는 수가 없습니다.");
       playMove(answer.move, answer);
     } catch (error) {
+      if (activeSession !== session) return;
       busy = false;
       setStatus(`AI 오류: ${error.message}`);
       render();
@@ -290,12 +317,14 @@ function closeModal() {
 function updatePlayerLabels() {
   for (const player of ["P1", "P2"]) {
     const value = playerType(player);
-    $(player === "P1" ? "p1Name" : "p2Name").textContent = value === "human" ? "사람" : AI_LEVELS[value].name;
+    $(player === "P1" ? "p1Name" : "p2Name").textContent = playerDisplayName(value);
   }
   const selectedLevel = $("p2Select").value === "human" ? $("p1Select").value : $("p2Select").value;
   $("levelDetail").textContent = selectedLevel === "human"
     ? "두 선수를 설정한 뒤 새 대국 또는 AI끼리 1판을 선택하세요."
-    : `${AI_LEVELS[selectedLevel].name} · ${AI_LEVELS[selectedLevel].description}`;
+    : selectedLevel === "custom"
+      ? "내 AI 코드 · 아래 코드 편집기의 chooseMove(state, me)를 매 수 실행합니다."
+      : `${AI_LEVELS[selectedLevel].name} · ${AI_LEVELS[selectedLevel].description}`;
   document.querySelectorAll(".level-card").forEach((card) => {
     card.classList.toggle("active", card.dataset.version.toLowerCase() === selectedLevel);
   });
@@ -321,7 +350,169 @@ function resetTelemetry() {
 }
 
 function sourceLabel(source) {
-  return { random: "무작위", heuristic: "정적 평가", search: "고정 탐색", "iterative-search": "반복 심화", tablebase: "정확해" }[source] ?? "탐색";
+  return { random: "무작위", heuristic: "정적 평가", search: "고정 탐색", "iterative-search": "반복 심화", tablebase: "정확해", "custom-code": "내 AI 코드" }[source] ?? "탐색";
+}
+
+function playerDisplayName(type) {
+  if (type === "human") return "사람";
+  if (type === "custom") return "내 AI 코드";
+  return AI_LEVELS[type]?.name ?? type;
+}
+
+async function testCustomCode() {
+  if (tournamentRunning) return;
+  const button = $("testCode");
+  button.disabled = true;
+  setCodeStatus("초기 국면에서 한 수를 실행하고 있습니다…");
+  try {
+    const testState = initialState();
+    const answer = await runCustomAI($("customEditor").value, testState);
+    const notation = moveNotation(testState, answer.move);
+    setCodeStatus(`검증 성공 · ${notation} · ${answer.stats.elapsedMs}ms`, "success");
+  } catch (error) {
+    setCodeStatus(`검증 실패 · ${error.message}`, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function copyCustomSpec() {
+  try {
+    await navigator.clipboard.writeText(`${CUSTOM_AI_SPEC}\n\n[시작 예제]\n${STARTER_AI_CODE}`);
+    setCodeStatus("LLM에 전달할 함수 규격과 예제 코드를 복사했습니다.", "success");
+  } catch {
+    setCodeStatus("클립보드 접근이 차단됐습니다. 아래 규격 보기를 펼쳐 직접 복사하세요.", "error");
+  }
+}
+
+async function runBenchmarkBattle() {
+  if (tournamentRunning) return;
+  const code = $("customEditor").value;
+  try {
+    validateCustomCode(code);
+  } catch (error) {
+    setCodeStatus(error.message, "error");
+    return;
+  }
+
+  const selectedOpponent = $("battleOpponent").value;
+  const opponents = selectedOpponent === "all" ? [...levelOrder] : [selectedOpponent];
+  const gamesPerOpponent = Number($("battleCount").value);
+  const totalGames = opponents.length * gamesPerOpponent;
+  const results = Object.fromEntries(opponents.map((level) => [level, { win: 0, draw: 0, loss: 0, errors: 0 }]));
+  const total = { win: 0, draw: 0, loss: 0, errors: 0 };
+  const token = ++tournamentToken;
+  let completed = 0;
+
+  tournamentRunning = true;
+  $("runBattle").disabled = true;
+  $("stopBattle").disabled = false;
+  $("testCode").disabled = true;
+  $("battleTableBody").innerHTML = "";
+  updateBattleSummary(total, completed, totalGames, results);
+  setBattleNote("내 AI는 P1과 P2를 번갈아 맡습니다. 첫 경기를 준비 중입니다.");
+
+  try {
+    for (const opponent of opponents) {
+      for (let game = 0; game < gamesPerOpponent; game += 1) {
+        if (token !== tournamentToken) return;
+        const customSide = game % 2 === 0 ? "P1" : "P2";
+        $("battleStatus").textContent = `${AI_LEVELS[opponent].name} · ${game + 1}/${gamesPerOpponent} · 내 AI ${customSide}`;
+        let outcome;
+        try {
+          outcome = await playBenchmarkGame(code, opponent, customSide, token);
+        } catch (error) {
+          if (token !== tournamentToken) return;
+          outcome = { result: "loss", plies: 0, error: error.message };
+        }
+        results[opponent][outcome.result] += 1;
+        total[outcome.result] += 1;
+        if (outcome.error) {
+          results[opponent].errors += 1;
+          total.errors += 1;
+          setBattleNote(`${AI_LEVELS[opponent].name}전 오류 · ${outcome.error}`, "error");
+        } else {
+          setBattleNote(`${AI_LEVELS[opponent].name}전 ${outcome.result === "win" ? "승리" : outcome.result === "draw" ? "무승부" : "패배"} · ${outcome.plies}수`);
+        }
+        completed += 1;
+        updateBattleSummary(total, completed, totalGames, results);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    }
+    $("battleStatus").textContent = "대전 완료";
+    setBattleNote(`${completed}경기 완료 · 내 AI 승률 ${Math.round(total.win / Math.max(1, completed) * 100)}%`, total.errors ? "error" : "");
+  } finally {
+    if (token === tournamentToken) {
+      tournamentRunning = false;
+      $("runBattle").disabled = false;
+      $("stopBattle").disabled = true;
+      $("testCode").disabled = false;
+    }
+  }
+}
+
+async function playBenchmarkGame(code, opponent, customSide, token) {
+  let matchState = initialState();
+  const seen = new Map([[stateKey(matchState), 1]]);
+
+  for (let ply = 0; ply < CUSTOM_AI_LIMITS.maxPlies && !matchState.winner; ply += 1) {
+    if (token !== tournamentToken) throw new Error("대전이 중지되었습니다.");
+    const available = legalMoves(matchState);
+    if (!available.length) {
+      return { result: matchState.turn === customSide ? "loss" : "win", plies: ply, error: null };
+    }
+    const answer = matchState.turn === customSide
+      ? await runCustomAI(code, matchState)
+      : chooseMove(matchState, opponent, { timeMs: opponent === "v5" ? 45 : undefined, maxDepth: 10 });
+    if (!answer.move) throw new Error("AI가 수를 반환하지 않았습니다.");
+    matchState = applyMove(matchState, answer.move);
+    if (!matchState.winner) {
+      const key = stateKey(matchState);
+      const count = (seen.get(key) ?? 0) + 1;
+      seen.set(key, count);
+      if (count >= 3) matchState = withDraw(matchState);
+    }
+  }
+
+  const plies = matchState.ply ?? CUSTOM_AI_LIMITS.maxPlies;
+  if (!matchState.winner || matchState.winner === "DRAW") return { result: "draw", plies, error: null };
+  return { result: matchState.winner === customSide ? "win" : "loss", plies, error: null };
+}
+
+function stopBenchmarkBattle() {
+  if (!tournamentRunning) return;
+  tournamentToken += 1;
+  tournamentRunning = false;
+  terminateCustomAIWorkers();
+  $("runBattle").disabled = false;
+  $("stopBattle").disabled = true;
+  $("testCode").disabled = false;
+  $("battleStatus").textContent = "사용자가 중지함";
+  setBattleNote("진행 중인 대전을 중지했습니다.");
+}
+
+function updateBattleSummary(total, completed, totalGames, results) {
+  $("battleWins").textContent = total.win;
+  $("battleDraws").textContent = total.draw;
+  $("battleLosses").textContent = total.loss;
+  $("battleRate").textContent = `${Math.round(total.win / Math.max(1, completed) * 100)}%`;
+  $("battleProgressText").textContent = `${completed} / ${totalGames}`;
+  $("battleBar").style.width = `${completed / Math.max(1, totalGames) * 100}%`;
+  $("battleTableBody").innerHTML = Object.entries(results).map(([level, score]) => {
+    const games = score.win + score.draw + score.loss;
+    const rate = Math.round(score.win / Math.max(1, games) * 100);
+    return `<tr><td>${escapeHtml(AI_LEVELS[level].name)}</td><td>${score.win}</td><td>${score.draw}</td><td>${score.loss}</td><td>${rate}%</td><td>${score.errors}</td></tr>`;
+  }).join("");
+}
+
+function setCodeStatus(message, type = "") {
+  $("codeStatus").textContent = message;
+  $("codeStatus").className = `code-status ${type}`.trim();
+}
+
+function setBattleNote(message, type = "") {
+  $("battleNote").textContent = message;
+  $("battleNote").className = `battle-note ${type}`.trim();
 }
 
 function setStatus(message) {
@@ -342,6 +533,27 @@ $("clearLog").onclick = () => { log = []; renderLog(); };
 $("p1Select").onchange = updatePlayerLabels;
 $("p2Select").onchange = updatePlayerLabels;
 $("resultModal").onclick = (event) => { if (event.target === $("resultModal")) closeModal(); };
+$("customEditor").addEventListener("input", () => {
+  localStorage.setItem("animal-shogi-custom-ai", $("customEditor").value);
+  setCodeStatus("코드를 수정했습니다. 브라우저에 자동 저장됐습니다.");
+});
+$("customEditor").addEventListener("keydown", (event) => {
+  if (event.key !== "Tab") return;
+  event.preventDefault();
+  const editor = event.currentTarget;
+  const start = editor.selectionStart;
+  editor.setRangeText("  ", start, editor.selectionEnd, "end");
+  editor.dispatchEvent(new Event("input"));
+});
+$("resetCode").onclick = () => {
+  $("customEditor").value = STARTER_AI_CODE;
+  localStorage.setItem("animal-shogi-custom-ai", STARTER_AI_CODE);
+  setCodeStatus("시작 예제 코드를 복원했습니다.", "success");
+};
+$("copySpec").onclick = copyCustomSpec;
+$("testCode").onclick = testCustomCode;
+$("runBattle").onclick = runBenchmarkBattle;
+$("stopBattle").onclick = stopBenchmarkBattle;
 
 initializeControls();
 newGame();
