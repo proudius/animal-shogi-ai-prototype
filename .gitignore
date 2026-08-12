@@ -1,0 +1,15 @@
+# Local development
+server.stdout.log
+server.stderr.log
+.DS_Store
+Thumbs.db
+
+# Generated full tablebases can be hundreds of MB
+tablebase.json
+*.tb
+*.ctb
+
+# Keep the tiny tablebase-demo.json sample in Git
+node_modules/
+coverage/
+

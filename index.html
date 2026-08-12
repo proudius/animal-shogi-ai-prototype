@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="동물장기 규칙 엔진과 v1~v5 AI를 직접 대국하고 비교하는 완전해석형 AI 연구실">
+  <title>동물장기 AI 연구실 — v1~v5</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">ANIMAL SHOGI · SEARCH LAB</p>
+        <h1>작은 보드, <span>끝까지 읽는 AI.</span></h1>
+        <p class="hero-copy">정확한 동물장기 엔진 위에서 무작위 v1부터 테이블베이스 연동 v5까지 직접 대국하고 탐색량을 비교하세요.</p>
+      </div>
+      <div class="solved-badge">
+        <span>완전해석 결과</span>
+        <strong>후수 필승</strong>
+        <small>최선 대국 78수 · 2009 연구 기준</small>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <article class="board-panel panel">
+        <div class="panel-head">
+          <div>
+            <span class="step">01 · PLAYGROUND</span>
+            <h2>대국 보드</h2>
+          </div>
+          <div class="turn-pill" id="turnPill">내 차례 · P1</div>
+        </div>
+
+        <div class="player-strip opponent-strip">
+          <div class="avatar red">P2</div>
+          <div><b id="p2Name">v5 완전해석형</b><small>위에서 아래로 전진</small></div>
+          <div class="hand" id="p2Hand" aria-label="P2 잡은 말"></div>
+        </div>
+
+        <div class="board-wrap">
+          <div class="file-labels"><span>A</span><span>B</span><span>C</span></div>
+          <div class="rank-labels"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+          <div class="board" id="board" aria-label="3x4 동물장기판"></div>
+        </div>
+
+        <div class="player-strip">
+          <div class="avatar blue">P1</div>
+          <div><b id="p1Name">사람</b><small>아래에서 위로 전진</small></div>
+          <div class="hand" id="p1Hand" aria-label="P1 잡은 말"></div>
+        </div>
+
+        <div class="board-actions">
+          <button id="newGame" class="primary">새 대국</button>
+          <button id="undo">한 수 취소</button>
+          <button id="hint">추천 수 분석</button>
+          <button id="autoPlay">AI끼리 1판</button>
+        </div>
+        <p class="status" id="status" aria-live="polite">말을 선택한 뒤 표시된 칸으로 이동하세요.</p>
+      </article>
+
+      <aside class="control-column">
+        <section class="panel settings-panel">
+          <div class="panel-head compact">
+            <div><span class="step">02 · MATCH SETUP</span><h2>선수 설정</h2></div>
+          </div>
+          <div class="select-grid">
+            <label>P1 · 아래쪽<select id="p1Select"><option value="human">사람</option></select></label>
+            <label>P2 · 위쪽<select id="p2Select"></select></label>
+          </div>
+          <div class="level-detail" id="levelDetail"></div>
+        </section>
+
+        <section class="panel telemetry-panel">
+          <div class="panel-head compact">
+            <div><span class="step">03 · TELEMETRY</span><h2>마지막 탐색</h2></div>
+            <span class="exact-chip" id="sourceChip">대기</span>
+          </div>
+          <div class="metrics">
+            <div><span>탐색 노드</span><b id="nodes">0</b></div>
+            <div><span>완료 깊이</span><b id="depth">0</b></div>
+            <div><span>생각 시간</span><b id="elapsed">0 ms</b></div>
+            <div><span>전치표 적중</span><b id="tableHits">0</b></div>
+          </div>
+          <div class="analysis-line">
+            <span>선택한 수</span><strong id="chosenMove">—</strong>
+          </div>
+        </section>
+
+        <section class="panel record-panel">
+          <div class="panel-head compact">
+            <div><span class="step">04 · GAME LOG</span><h2>기보</h2></div>
+            <button id="clearLog" class="text-button">지우기</button>
+          </div>
+          <ol id="moveLog" class="move-log"><li class="empty">아직 둔 수가 없습니다.</li></ol>
+        </section>
+      </aside>
+    </section>
+
+    <section class="levels-section">
+      <div class="section-title">
+        <div><span class="step">AI EVOLUTION</span><h2>성능별 예제 AI v1 → v5</h2></div>
+        <p>각 단계는 앞 단계의 구조를 유지하면서 수읽기와 재사용 능력을 추가합니다.</p>
+      </div>
+      <div class="level-cards" id="levelCards"></div>
+    </section>
+
+    <section class="facts-grid">
+      <article class="fact-card panel">
+        <span>REACHABLE STATES</span><strong>246,803,167</strong><p>초기 배치에서 도달 가능한 전체 상태 수</p>
+      </article>
+      <article class="fact-card panel">
+        <span>NON-TERMINAL</span><strong>99,485,568</strong><p>후퇴 분석 대상이 된 비종료 상태 수</p>
+      </article>
+      <article class="fact-card panel accent">
+        <span>V5 TABLEBASE</span><strong id="tablebaseCount">0</strong><p>현재 브라우저에 적재된 정확 해답 수</p>
+      </article>
+      <article class="method-card panel">
+        <span>EXHAUSTIVE MODE</span>
+        <h3>전수 계산은 별도 생성기로</h3>
+        <p>전체 데이터는 수백 MB와 대용량 메모리가 필요합니다. 프로젝트의 생성기는 모든 도달 상태를 열거하고 후퇴 분석해 승·무·패와 종국 거리를 계산합니다.</p>
+        <code>npm run tablebase:full</code>
+      </article>
+    </section>
+
+    <section class="rules panel">
+      <div class="section-title"><div><span class="step">RULEBOOK</span><h2>이 구현의 규칙</h2></div></div>
+      <div class="rule-list">
+        <p><b>승리</b> 상대 라이온을 잡거나, 내 라이온이 상대 끝줄에 도착한 뒤 상대의 바로 다음 수까지 살아남으면 트라이 승리입니다.</p>
+        <p><b>병아리</b> 앞으로 한 칸 이동해 끝줄에 닿으면 닭으로 승격합니다. 잡히면 다시 병아리가 됩니다.</p>
+        <p><b>놓기</b> 잡은 말은 빈칸 어디에나 놓을 수 있습니다. 병아리를 끝줄에 놓는 것도 허용됩니다.</p>
+        <p><b>반복</b> 보드·잡은 말·차례가 같은 국면이 세 번째 나타나면 무승부입니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="result-modal" id="resultModal" hidden>
+    <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+      <span id="resultKicker">GAME OVER</span>
+      <h2 id="resultTitle">P1 승리</h2>
+      <p id="resultReason"></p>
+      <button id="modalNewGame" class="primary">새 대국 시작</button>
+      <button id="closeModal">기보 계속 보기</button>
+    </div>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
